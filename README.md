@@ -1,7 +1,3 @@
-Below is an example README.md that you could use on GitHub and PyPI. It explains how TrainSense works, how to install it, and provides detailed examples and explanations for integrating it into your code.
-
----
-
 # TrainSense
 
 TrainSense is an ultra robust Python package for deep analysis of deep learning model architectures, advanced hyperparameter optimization, and comprehensive system diagnostics. It can automatically detect various layer types (e.g., LSTM, RNN, CNN, Transformer, GPT, etc.), provide detailed hyperparameter recommendations, profile model performance, and retrieve system information (including CUDA and cuDNN versions).  
