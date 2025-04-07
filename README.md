@@ -1,10 +1,41 @@
-# TrainSense: Analyze, Profile, and Optimize your PyTorch Training Workflow
+# TrainSense v0.3.0: Analyze, Profile, and Optimize your PyTorch Training Workflow
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<!-- Badges for CI/CD, PyPI version, etc., can be added later -->
 
-TrainSense is a Python toolkit designed to provide deep insights into your PyTorch model training environment and performance. It helps you understand your system's capabilities, analyze your model's architecture, evaluate hyperparameter choices, profile execution bottlenecks, and ultimately optimize your deep learning workflow.
+TrainSense is a Python toolkit designed to provide deep insights into your PyTorch model training environment and performance. It helps you understand your system's capabilities, analyze your model's architecture, evaluate hyperparameter choices, profile execution bottlenecks (including full training steps), diagnose gradient issues, and ultimately optimize your deep learning workflow.
 
-Whether you're debugging slow training, trying to maximize GPU utilization, or simply want a clearer picture of your setup, TrainSense offers a suite of tools to assist you.
+Whether you're debugging slow training, trying to maximize GPU utilization, investigating vanishing/exploding gradients, or simply want a clearer picture of your setup, TrainSense offers a suite of tools to assist you.
+
+**(GitHub Repo link coming very soon!)**
+
+---
+
+## Table of Contents
+
+*   [Key Features](#key-features)
+*   [What's New in v0.3.0](#whats-new-in-v030)
+*   [Installation](#installation)
+*   [Core Concepts](#core-concepts)
+*   [Getting Started: Quick Example](#getting-started-quick-example)
+*   [Detailed Usage Examples](#detailed-usage-examples)
+    *   [1. System Configuration (`SystemConfig`)](#1-checking-system-configuration)
+    *   [2. Architecture Analysis (`ArchitectureAnalyzer`)](#2-analyzing-your-models-architecture)
+    *   [3. Hyperparameter Recommendations (`TrainingAnalyzer`)](#3-getting-hyperparameter-recommendations)
+    *   [4. Inference Performance Profiling (`ModelProfiler.profile_model`)](#4-profiling-model-inference-performance)
+    *   [5. Training Step Profiling (`ModelProfiler.profile_training_step`)](#5-profiling-a-full-training-step-new-in-v030)
+    *   [6. Gradient Analysis (`GradientAnalyzer`)](#6-analyzing-gradients-new-in-v030)
+    *   [7. GPU Monitoring (`GPUMonitor`)](#7-monitoring-gpu-status)
+    *   [8. Optimizer & Scheduler Suggestions (`OptimizerHelper`)](#8-getting-optimizer-and-scheduler-suggestions)
+    *   [9. Heuristic Hyperparameters (`UltraOptimizer`)](#9-generating-heuristic-hyperparameters-ultraoptimizer)
+    *   [10. Comprehensive Reporting (`DeepAnalyzer`)](#10-using-the-comprehensive-reporter-deepanalyzer)
+    *   [11. Plotting Training Breakdown (`visualizer`)](#11-plotting-training-breakdown-optional-new-in-v030)
+    *   [12. Logging (`TrainLogger`)](#12-using-the-logger)
+*   [Interpreting the Output](#interpreting-the-output)
+*   [Contributing](#contributing)
+*   [License](#license)
+
+---
 
 ## Key Features
 
@@ -15,17 +46,31 @@ Whether you're debugging slow training, trying to maximize GPU utilization, or s
     *   **`ArchitectureAnalyzer`:** Counts parameters (total/trainable), layers, analyzes layer types, estimates input shape, infers architecture type (CNN, RNN, Transformer...), and provides complexity assessment and recommendations.
 *   **Hyperparameter Sanity Checks:**
     *   **`TrainingAnalyzer`:** Evaluates batch size, learning rate, and epochs based on system resources and model complexity. Provides recommendations and suggests automatic adjustments.
-*   **Performance Profiling:**
-    *   **`ModelProfiler`:** Measures inference speed (latency, throughput) and integrates `torch.profiler` for detailed operator-level CPU/GPU time and memory usage analysis. Identifies bottlenecks.
+*   **Advanced Performance Profiling:**
+    *   **`ModelProfiler`:**
+        *   Measures **inference speed** (latency, throughput).
+        *   **(New!)** Profiles a **full training step** (data loading/prep, forward, loss, backward, optimizer step) to identify bottlenecks specific to training.
+        *   Integrates `torch.profiler` for detailed operator-level CPU/GPU time and memory usage analysis.
+*   **Gradient Diagnostics (New!):**
+    *   **`GradientAnalyzer`:** Inspects gradient statistics (norms, mean, std, NaN/Inf counts) per parameter after a backward pass to help diagnose vanishing/exploding gradients or other training stability issues.
 *   **GPU Monitoring:**
     *   **`GPUMonitor`:** Provides real-time, detailed GPU status including load, memory utilization (used, total), and temperature (requires `GPUtil`).
 *   **Training Optimization Guidance:**
     *   **`OptimizerHelper`:** Suggests suitable optimizers (Adam, AdamW, SGD) and learning rate schedulers based on model characteristics. Recommends initial learning rates.
     *   **`UltraOptimizer`:** Generates a full set of heuristic hyperparameters (batch size, LR, epochs, optimizer, scheduler) as a starting point, based on system, model, and basic data stats.
 *   **Consolidated Reporting:**
-    *   **`DeepAnalyzer`:** Orchestrates the analysis, profiling, and diagnostics modules to generate a comprehensive report with aggregated insights and recommendations.
+    *   **`DeepAnalyzer`:** Orchestrates analysis modules to generate a comprehensive report with aggregated insights and recommendations. Can optionally include results from training step profiling and gradient analysis.
+*   **Visualization (New!):**
+    *   **`visualizer.plot_training_step_breakdown`:** Generates a bar chart showing the time distribution across different phases of the training step (requires `matplotlib`).
 *   **Flexible Logging:**
     *   **`TrainLogger`:** Configurable logging to console and rotating files.
+
+## What's New in v0.3.0
+
+*   🚀 **Training Step Profiling (`ModelProfiler.profile_training_step`):** Go beyond inference! Profile the entire forward-backward-optimizer sequence, including detailed data loading breakdown (fetch vs. prep), to understand where time is *really* spent during training.
+*   🩺 **Gradient Analysis (`GradientAnalyzer`):** A new dedicated tool to check the health of your gradients after `loss.backward()`. Calculate norms, check for NaN/Inf values, and get summaries to quickly spot potential training instabilities like vanishing or exploding gradients.
+*   📊 **Basic Visualization (`visualizer.plot_training_step_breakdown`):** Optionally generate a bar chart visualizing the training step time breakdown (requires `matplotlib`).
+*   ⚙️ **Integrated Reporting (`DeepAnalyzer`):** The comprehensive report can now optionally trigger and include results from training step profiling and gradient analysis for a more holistic view.
 
 ## Installation
 
@@ -43,69 +88,69 @@ It's highly recommended to use a virtual environment.
 2.  **Install PyTorch:** TrainSense depends on PyTorch. Install the version suitable for your system (especially CUDA version) by following the official instructions: [https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/)
 
 3.  **Install Dependencies & TrainSense:**
-    Clone the repository (if you have it locally) or install directly if published (replace with pip install command if on PyPI). Assuming you have the code locally:
+    *(Assuming you have the code locally. Replace with `pip install trainsense` if published on PyPI)*
     ```bash
-    # Ensure requirements.txt exists and lists psutil, GPUtil
-    pip install -r requirements.txt
+    # Install core dependencies (if requirements.txt is up-to-date)
+    # pip install -r requirements.txt
+
+    # Install TrainSense
     pip install .
-    # Or for development mode:
+
+    # Or for development (recommended):
     # pip install -e .
+
+    # To install with plotting capabilities:
+    pip install .[plotting]
+    # Or if using development mode:
+    # pip install -e .[plotting]
     ```
+    The core dependencies (`psutil`, `torch`, `GPUtil`) are listed in `setup.py`'s `install_requires`. `matplotlib` is an optional dependency defined in `extras_require['plotting']`.
 
 ## Core Concepts
 
-TrainSense works by examining different facets of your training setup:
+TrainSense aims to provide a holistic view by examining different facets of your training setup:
 
-1.  **System Context (`SystemConfig`, `SystemDiagnostics`, `GPUMonitor`):** Understand the hardware and software environment your model runs in. Is CUDA available? How much GPU memory? What's the current CPU load?
-2.  **Model Introspection (`ArchitectureAnalyzer`):** Look inside the model. How complex is it? What kinds of layers are used? This influences resource needs and hyperparameter choices.
-3.  **Hyperparameter Evaluation (`TrainingAnalyzer`, `OptimizerHelper`, `UltraOptimizer`):** Assess if the chosen batch size, learning rate, epochs, and optimizer are sensible given the system and model context. Get suggestions for better starting points.
-4.  **Performance Measurement (`ModelProfiler`):** Run the model (usually in inference mode) to measure its speed and, more importantly, use detailed profiling to see exactly where time is spent (CPU vs GPU, specific operations) and how much memory is consumed.
-5.  **Synthesis (`DeepAnalyzer`):** Combine all these pieces of information into a single report, highlighting potential issues (e.g., "High memory usage detected," "Low GPU utilization suggests bottleneck") and providing actionable recommendations.
+1.  **System Context (`SystemConfig`, `SystemDiagnostics`, `GPUMonitor`):** Understand the environment (hardware/software). *Can my GPU handle this batch size? Is my CPU bottlenecking data loading?*
+2.  **Model Introspection (`ArchitectureAnalyzer`):** Look inside the model. *How complex is it? What layers are used? Might this architecture benefit from AdamW?*
+3.  **Hyperparameter Evaluation (`TrainingAnalyzer`, `OptimizerHelper`, `UltraOptimizer`):** Assess training parameters. *Is my learning rate too high? Are enough epochs planned? Is SGD appropriate here?*
+4.  **Performance Measurement (`ModelProfiler`):** Measure execution. *How fast is inference? Where is time spent during a *training* step (data fetch, data prep, forward, backward, optimizer)? How much memory is needed?*
+5.  **Training Stability (`GradientAnalyzer`):** Check the learning process itself. *Are my gradients vanishing? Are they exploding? Are there NaNs?*
+6.  **Synthesis (`DeepAnalyzer`):** Combine insights from various analyses into actionable recommendations.
 
-## Getting Started: A Quick Example
+## Getting Started: Quick Example
 
 ```python
 import torch
 import torch.nn as nn
 import logging
+from torch.optim import Adam
+from torch.utils.data import DataLoader, TensorDataset
 
 # --- Basic Logging Setup ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # --- Import Key TrainSense Components ---
-from TrainSense.system_config import SystemConfig
-from TrainSense.arch_analyzer import ArchitectureAnalyzer
-from TrainSense.model_profiler import ModelProfiler
-from TrainSense.deep_analyzer import DeepAnalyzer
-from TrainSense.analyzer import TrainingAnalyzer
-from TrainSense.system_diagnostics import SystemDiagnostics
-from TrainSense.utils import print_section
+# Assuming TrainSense is installed or in PYTHONPATH
+from TrainSense import (SystemConfig, ArchitectureAnalyzer, ModelProfiler,
+                      DeepAnalyzer, TrainingAnalyzer, SystemDiagnostics,
+                      GradientAnalyzer, OptimizerHelper, GPUMonitor, print_section,
+                      plot_training_step_breakdown) # Import plotting function
 
-# --- Define Your Model ---
-# Replace with your actual model
-class SimpleCNN(nn.Module):
-    def __init__(self, num_classes=10):
-        super().__init__()
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)
-        self.relu = nn.ReLU()
-        self.pool = nn.MaxPool2d(2)
-        self.flatten = nn.Flatten()
-        # Calculate flattened size based on an example input (e.g., 32x32)
-        # For 3x32x32 -> Conv1(16x32x32) -> Pool(16x16x16) -> Flatten(16*16*16=4096)
-        self.fc = nn.Linear(16 * 16 * 16, num_classes)
+# --- Define Your Model & Setup ---
+model = nn.Sequential(nn.Linear(128, 64), nn.ReLU(), nn.Linear(64, 10)) # Example model
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+batch_size, lr, epochs = 32, 0.001, 10
+# IMPORTANT: Define the correct input shape for your model for one batch!
+input_shape = (batch_size, 128)
+criterion = nn.CrossEntropyLoss().to(device) # Move criterion to device
+optimizer = Adam(model.parameters(), lr=lr)
 
-    def forward(self, x):
-        x = self.pool(self.relu(self.conv1(x)))
-        x = self.flatten(x)
-        x = self.fc(x)
-        return x
-
-model = SimpleCNN()
-
-# --- Define Initial Training Parameters ---
-batch_size = 64
-learning_rate = 0.01
-epochs = 20
+# Create dummy data for profiling/gradient analysis examples
+dummy_X = torch.randn(*input_shape, device='cpu')
+dummy_y = torch.randint(0, 10, (input_shape[0],), device='cpu', dtype=torch.long)
+dummy_dataset = TensorDataset(dummy_X, dummy_y)
+dummy_loader = DataLoader(dummy_dataset, batch_size=batch_size, num_workers=0)
 
 # --- Instantiate TrainSense Components ---
 print_section("Initializing TrainSense Components")
@@ -113,421 +158,392 @@ try:
     sys_config = SystemConfig()
     sys_diag = SystemDiagnostics()
     arch_analyzer = ArchitectureAnalyzer(model)
-
-    # Use estimated input shape or provide a known one
-    # Let's assume 3x32x32 images for this CNN
-    example_input_shape = (batch_size, 3, 32, 32) # Use your actual batch size
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    arch_info = arch_analyzer.analyze() # Analyze first for context
     model_profiler = ModelProfiler(model, device=device)
+    training_analyzer = TrainingAnalyzer(batch_size, lr, epochs, system_config=sys_config, arch_info=arch_info)
+    grad_analyzer = GradientAnalyzer(model) # Needs model
 
-    # Get architecture info needed by TrainingAnalyzer
-    arch_info = arch_analyzer.analyze()
-
-    training_analyzer = TrainingAnalyzer(
-        batch_size=batch_size,
-        learning_rate=learning_rate,
-        epochs=epochs,
-        system_config=sys_config, # Pass the config object
-        arch_info=arch_info
-    )
-
-    # The DeepAnalyzer brings it all together
-    deep_analyzer = DeepAnalyzer(
-        training_analyzer=training_analyzer,
-        arch_analyzer=arch_analyzer,
-        model_profiler=model_profiler,
-        system_diag=sys_diag
-    )
+    # DeepAnalyzer combines multiple analyses
+    # Pass the gradient analyzer instance here
+    deep_analyzer = DeepAnalyzer(training_analyzer, arch_analyzer, model_profiler, sys_diag, gradient_analyzer=grad_analyzer)
     print("TrainSense Components Initialized.")
 
-    # --- Run Comprehensive Analysis ---
-    print_section("Running Comprehensive Analysis")
-    # Profiling needs an input shape
-    report = deep_analyzer.comprehensive_report(profile_input_shape=example_input_shape)
-    print("Comprehensive Analysis Complete.")
+    # --- Run Backward Pass (Needed for Gradient Analysis!) ---
+    print_section("Setup: Running Backward Pass")
+    GRADIENTS_AVAILABLE = False
+    try:
+        model.train()
+        optimizer.zero_grad()
+        inputs, targets = next(iter(dummy_loader)) # Get one batch
+        outputs = model(inputs.to(device))
+        loss = criterion(outputs, targets.to(device))
+        loss.backward()
+        print(f"Ran one backward pass (Loss: {loss.item():.3f})")
+        GRADIENTS_AVAILABLE = True
+    except Exception as e:
+        logging.error(f"Failed to run backward pass for gradient analysis: {e}", exc_info=True)
+        print(f"!! Failed to run backward pass: {e}")
+    finally:
+        model.eval() # Set back to eval mode
 
-    # --- Display Key Findings ---
-    print_section("Key Findings from Report")
+    # --- Run Comprehensive Analysis (including new v0.3.0 features) ---
+    print_section("Running Comprehensive Analysis (v0.3.0)")
+    report = {} # Initialize report dict
+    try:
+        report = deep_analyzer.comprehensive_report(
+            profile_inference=True,             # Enable inference profiling
+            profile_training=True,              # <<-- Enable training profiling
+            gradient_analysis=GRADIENTS_AVAILABLE, # <<-- Enable gradient analysis (if backward succeeded)
+            inference_input_shape=input_shape,  # Shape for inference
+            training_data_loader=dummy_loader,  # Loader for training profile
+            criterion=criterion,                # Criterion for training profile
+            optimizer=optimizer,                # Optimizer for training profile
+            profile_iterations=50,              # Iterations for inference profile
+            train_profile_iterations=10         # Iterations for training profile
+        )
+        print("Comprehensive Analysis Complete.")
 
-    print("\n>>> Overall Recommendations:")
-    if report.get("overall_recommendations"):
-        for rec in report["overall_recommendations"]:
+        # --- Display Key Findings ---
+        print("\n>>> Overall Recommendations:")
+        for rec in report.get("overall_recommendations", ["No recommendations available."]):
             print(f"- {rec}")
-    else:
-        print("- No overall recommendations generated.")
 
-    print("\n>>> Hyperparameter Suggestions:")
-    adjustments = report.get("hyperparameter_analysis", {}).get("suggested_adjustments", {})
-    if adjustments and adjustments != {"batch_size": batch_size, "learning_rate": learning_rate, "epochs": epochs}:
-         for k, v in adjustments.items():
-             print(f"- Suggested {k}: {v}")
-    else:
-        print("- Initial hyperparameters seem reasonable or no adjustments suggested.")
+        # Optional: Display specific results directly
+        train_profile = report.get("training_step_profiling", {})
+        if "error" not in train_profile and train_profile:
+            print("\n>>> Training Step Timing Breakdown (%):")
+            print(f"  DataFetch={train_profile.get('percent_time_data_fetch', 0):.1f}, DataPrep={train_profile.get('percent_time_data_prep', 0):.1f}, Fwd={train_profile.get('percent_time_forward', 0):.1f}, Loss={train_profile.get('percent_time_loss', 0):.1f}, Bwd={train_profile.get('percent_time_backward', 0):.1f}, Opt={train_profile.get('percent_time_optimizer', 0):.1f}")
 
-    print("\n>>> Profiling Summary:")
-    profiling_data = report.get("model_profiling", {})
-    if "error" not in profiling_data and profiling_data:
-        avg_time = profiling_data.get('avg_total_time_ms', 'N/A')
-        throughput = profiling_data.get('throughput_samples_per_sec', 'N/A')
-        max_mem = profiling_data.get('max_memory_allocated_formatted', 'N/A')
-        gpu_util = profiling_data.get('avg_gpu_time_percent', None)
-        print(f"- Avg Inference Time: {avg_time:.2f} ms" if isinstance(avg_time, float) else f"- Avg Inference Time: {avg_time}")
-        print(f"- Throughput: {throughput:.2f} samples/sec" if isinstance(throughput, float) else f"- Throughput: {throughput}")
-        print(f"- Peak Memory Allocated: {max_mem}")
-        if gpu_util is not None:
-            print(f"- GPU Utilization (during profiling): {gpu_util:.1f}%")
-    elif "error" in profiling_data:
-        print(f"- Profiling Error: {profiling_data['error']}")
+        grad_analysis = report.get("gradient_analysis", {})
+        if "error" not in grad_analysis and grad_analysis:
+             print("\n>>> Gradient Analysis Summary:")
+             print(f"  Global Norm L2: {grad_analysis.get('global_grad_norm_L2', 'N/A'):.2e}")
+             print(f"  NaN/Inf Grads: {grad_analysis.get('num_params_nan_grad', 0)} / {grad_analysis.get('num_params_inf_grad', 0)}")
+
+    except Exception as e:
+        logging.exception("Error during comprehensive report generation")
+        print(f"\nERROR generating comprehensive report: {e}")
+
+    # --- Generate Plot (Optional) ---
+    print_section("Optional: Generate Training Step Plot")
+    if report and "training_step_profiling" in report and "error" not in report["training_step_profiling"]:
+        print("Attempting plot generation (requires matplotlib: `pip install trainsense[plotting]`)")
+        try:
+            if not os.path.exists("logs"): os.makedirs("logs") # Ensure log dir exists
+            plot_generated = plot_training_step_breakdown(
+                profile_results=report["training_step_profiling"],
+                save_path="logs/training_step_plot.png",
+                show_plot=False # Avoid blocking execution
+            )
+            if plot_generated: print("Plot saved to logs/training_step_plot.png")
+            else: print("Plot generation failed. Is matplotlib installed?")
+        except Exception as plot_err:
+            print(f"Plotting error: {plot_err}")
     else:
-        print("- Profiling data not available in report.")
+        print("Skipping plot: Training profile data not available or has errors.")
+
 
 except Exception as e:
     logging.exception("An error occurred during the TrainSense example.")
-    print(f"\n--- ERROR --- \nAn error occurred: {e}")
-    print("Please check the logs and ensure all components were initialized correctly.")
+    print(f"\n--- OVERALL ERROR --- \nAn error occurred: {e}")
 
 ```
 
 ## Detailed Usage Examples
 
-Here's how to use individual components:
+*(These examples show how to use each component individually)*
 
 ### 1. Checking System Configuration
 
-Get a snapshot of your hardware and software setup.
-
 ```python
-from TrainSense.system_config import SystemConfig
-from TrainSense.utils import print_section
+from TrainSense import SystemConfig, print_section
 
 sys_config = SystemConfig()
-summary = sys_config.get_summary() # Get a concise summary
-
+summary = sys_config.get_summary() # Concise overview
 print_section("System Summary")
-for key, value in summary.items():
-    print(f"- {key.replace('_', ' ').title()}: {value}")
-
-# You can also get the full detailed config
-# full_config = sys_config.get_config()
-# print("\nFull Config:", full_config)
+for key, value in summary.items(): print(f"- {key.replace('_', ' ').title()}: {value}")
+# full_config = sys_config.get_config() # More details
 ```
 
 ### 2. Analyzing Your Model's Architecture
 
-Understand the structure and complexity of your `nn.Module`.
-
 ```python
 import torch.nn as nn
-from TrainSense.arch_analyzer import ArchitectureAnalyzer
-from TrainSense.utils import print_section
+from TrainSense import ArchitectureAnalyzer, print_section
 
-# Define or load your model
-model = nn.Sequential(
-    nn.Linear(784, 128),
-    nn.ReLU(),
-    nn.Linear(128, 10)
-)
-
+model = nn.Sequential(nn.Linear(784, 128), nn.ReLU(), nn.Linear(128, 10))
 arch_analyzer = ArchitectureAnalyzer(model)
-analysis = arch_analyzer.analyze() # Performs the analysis
-
+analysis = arch_analyzer.analyze()
 print_section("Architecture Analysis")
-print(f"- Total Parameters: {analysis.get('total_parameters', 0):,}")
-print(f"- Trainable Parameters: {analysis.get('trainable_parameters', 0):,}")
+print(f"- Params (Total/Trainable): {analysis.get('total_parameters', 0):,} / {analysis.get('trainable_parameters', 0):,}")
 print(f"- Layer Count: {analysis.get('layer_count', 'N/A')}")
-print(f"- Primary Architecture Type: {analysis.get('primary_architecture_type', 'N/A')}")
-print(f"- Complexity Category: {analysis.get('complexity_category', 'N/A')}")
-print(f"- Estimated Input Shape: {analysis.get('estimated_input_shape', 'N/A')}") # Useful for profiler!
+print(f"- Primary Architecture: {analysis.get('primary_architecture_type', 'N/A')}")
+print(f"- Complexity: {analysis.get('complexity_category', 'N/A')}")
+print(f"- Estimated Input: {analysis.get('estimated_input_shape', 'N/A')}")
 print(f"- Recommendation: {analysis.get('recommendation', 'N/A')}")
-
-print("\n- Layer Types:")
-for layer_type, count in analysis.get('layer_types_summary', {}).items():
-    print(f"  - {layer_type}: {count}")
+# ... print layer types ...
 ```
 
 ### 3. Getting Hyperparameter Recommendations
 
-Check if your initial batch size, learning rate, and epochs make sense.
-
 ```python
-from TrainSense.analyzer import TrainingAnalyzer
-from TrainSense.system_config import SystemConfig # Needed for context
-from TrainSense.arch_analyzer import ArchitectureAnalyzer # Needed for context
-from TrainSense.utils import print_section
-import torch.nn as nn # For dummy model
+from TrainSense import TrainingAnalyzer, SystemConfig, ArchitectureAnalyzer, print_section
+import torch.nn as nn
 
-# --- Get Context (System & Model) ---
-model = nn.Linear(10, 2) # Simple dummy model
+model = nn.Linear(10, 2)
 sys_config = SystemConfig()
-arch_analyzer = ArchitectureAnalyzer(model)
-arch_info = arch_analyzer.analyze()
-# -------------------------------------
-
-# --- Define Current Hyperparameters ---
-current_batch_size = 512
-current_lr = 0.1
-current_epochs = 5
-# ------------------------------------
-
-analyzer = TrainingAnalyzer(
-    batch_size=current_batch_size,
-    learning_rate=current_lr,
-    epochs=current_epochs,
-    system_config=sys_config, # Provide system context
-    arch_info=arch_info       # Provide model context
-)
+arch_analyzer = ArchitectureAnalyzer(model); arch_info = arch_analyzer.analyze()
+analyzer = TrainingAnalyzer(batch_size=512, learning_rate=0.1, epochs=5, system_config=sys_config, arch_info=arch_info)
 
 print_section("Hyperparameter Checks")
 recommendations = analyzer.check_hyperparameters()
-print("Recommendations:")
-for r in recommendations:
-    print(f"- {r}")
-
-print("\nSuggested Adjustments (Heuristic):")
+print("Recommendations:"); [print(f"- {r}") for r in recommendations]
 adjustments = analyzer.auto_adjust()
-for k, v in adjustments.items():
-    original_val = getattr(analyzer, k) # Get original value from analyzer instance
-    if v != original_val:
-        print(f"- Adjust {k}: from {original_val} to {v}")
-    else:
-        print(f"- Keep {k}: {v} (unchanged)")
+print("\nSuggested Adjustments:"); # ... print adjustments ...
 ```
 
-### 4. Profiling Model Performance
-
-Measure speed and resource usage. **Requires a correct `input_shape`!**
+### 4. Profiling Model Inference Performance
 
 ```python
-import torch
-import torch.nn as nn
-from TrainSense.model_profiler import ModelProfiler
-from TrainSense.utils import print_section, format_bytes
+import torch, torch.nn as nn
+from TrainSense import ModelProfiler, print_section
 
-# --- Define Model and Device ---
 model = nn.Sequential(nn.Linear(64, 64), nn.ReLU(), nn.Linear(64, 10))
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-# -----------------------------
-
-# --- Define Input Shape (Crucial!) ---
-# Must match your model's expected input for a single batch
-batch_size_for_profiling = 32
-input_features = 64
-input_shape = (batch_size_for_profiling, input_features)
-# ------------------------------------
+input_shape = (32, 64) # IMPORTANT: Set correct shape!
 
 profiler = ModelProfiler(model, device=device)
-
-print_section("Model Profiling")
-print(f"Profiling on {device} with input shape: {input_shape}")
-
+print_section("Model Inference Profiling")
 try:
-    profile_results = profiler.profile_model(
-        input_shape=input_shape,
-        iterations=100,      # Number of inference runs for timing
-        warmup=20,           # Warmup runs (ignored for timing)
-        use_torch_profiler=True # Enable detailed profiling
-    )
-
-    if "error" in profile_results:
-        print(f"\n!! Profiling Error: {profile_results['error']}")
+    results = profiler.profile_model(input_shape, iterations=100, use_torch_profiler=True)
+    if "error" in results: print(f"Error: {results['error']}")
     else:
-        print(f"\n--- Performance ---")
-        print(f"- Avg. Inference Time: {profile_results.get('avg_total_time_ms', 0):.3f} ms")
-        print(f"- Throughput: {profile_results.get('throughput_samples_per_sec', 0):.1f} samples/sec")
-
-        print(f"\n--- Memory ---")
-        print(f"- Peak Memory Allocated: {profile_results.get('max_memory_allocated_formatted', 'N/A')}")
-        if device.type == 'cuda':
-             print(f"- Peak Memory Reserved (CUDA): {profile_results.get('max_memory_reserved_formatted', 'N/A')}")
-
-        if profile_results.get('use_torch_profiler'):
-            print(f"\n--- Detailed Profiler Stats (Averages) ---")
-            cpu_perc = profile_results.get('avg_cpu_time_percent', 0)
-            gpu_perc = profile_results.get('avg_gpu_time_percent', 0)
-            print(f"- Device Utilization: CPU {cpu_perc:.1f}% | GPU {gpu_perc:.1f}%")
-            print(f"- Avg CPU Time Total: {profile_results.get('avg_cpu_time_total_ms', 0):.3f} ms")
-            if device.type == 'cuda':
-                print(f"- Avg CUDA Time Total: {profile_results.get('avg_cuda_time_total_ms', 0):.3f} ms")
-            # Optionally print the detailed operator table
-            # print("\n--- Top Operators by Self CPU Time ---")
-            # print(profile_results.get('profiler_top_ops_summary', 'Table not available.'))
-
-except ValueError as ve:
-     print(f"\n!! Input Shape Error: {ve}")
-except Exception as e:
-     print(f"\n!! An unexpected error occurred during profiling: {e}")
-
-
+        print(f"- Avg Time: {results.get('avg_total_time_ms', 0):.3f} ms")
+        print(f"- Throughput: {results.get('throughput_samples_per_sec', 0):.1f} samples/sec")
+        print(f"- Peak Memory: {results.get('max_memory_allocated_formatted', 'N/A')}")
+        # ... print profiler stats ...
+except Exception as e: print(f"Profiling failed: {e}")
 ```
-* **Important:** The profiler runs the model in `eval()` mode with `torch.no_grad()`. It measures inference performance. Training performance will differ due to backpropagation.
-* **Memory:** `max_memory_allocated` tracks the peak PyTorch tensor memory. `max_memory_reserved` (CUDA only) tracks the total memory blocked by the CUDA memory manager. Profiler memory stats (`profiler_avg_...`) reflect usage *during* the specific profiled operations.
 
-### 5. Monitoring GPU Status
-
-Get real-time stats for your NVIDIA GPU(s). Requires `GPUtil` to be installed and functional.
+### 5. Profiling a Full Training Step (New in v0.3.0!)
 
 ```python
-from TrainSense.gpu_monitor import GPUMonitor
-from TrainSense.utils import print_section
+import torch, torch.nn as nn
+from torch.optim import Adam
+from torch.utils.data import DataLoader, TensorDataset
+from TrainSense import ModelProfiler, print_section
 
+# --- Setup: Model, Device, Criterion, Optimizer, Loader ---
+# (Define model, device, criterion, optimizer, dummy_loader as in Quick Start)
+# ---
+model = nn.Sequential(nn.Linear(64, 10)).to(device)
+criterion = nn.CrossEntropyLoss().to(device)
+optimizer = Adam(model.parameters(), lr=0.001)
+dummy_X = torch.randn(32, 64); dummy_y = torch.randint(0, 10, (32,), dtype=torch.long)
+dummy_loader = DataLoader(TensorDataset(dummy_X, dummy_y), batch_size=32)
+# ---
+
+model_profiler = ModelProfiler(model, device=device)
+print_section("Training Step Profiling")
+try:
+    results = model_profiler.profile_training_step(
+        dummy_loader, criterion, optimizer, iterations=20, use_torch_profiler=True)
+
+    if "error" in results: print(f"Error: {results['error']}")
+    else:
+        print(f"- Avg Step Time: {results.get('avg_step_time_ms', 0):.2f} ms")
+        print(f"- Breakdown (%): DataFetch={results.get('percent_time_data_fetch', 0):.1f}, DataPrep={results.get('percent_time_data_prep', 0):.1f}, Fwd={results.get('percent_time_forward', 0):.1f}, Loss={results.get('percent_time_loss', 0):.1f}, Bwd={results.get('percent_time_backward', 0):.1f}, Opt={results.get('percent_time_optimizer', 0):.1f}")
+        print(f"- Peak Memory: {results.get('max_memory_allocated_formatted', 'N/A')}")
+        # ... optionally print detailed profiler table ...
+except Exception as e: print(f"Training profiling failed: {e}")
+```
+
+### 6. Analyzing Gradients (New in v0.3.0!)
+
+```python
+import torch, torch.nn as nn
+from torch.optim import Adam
+from torch.utils.data import DataLoader, TensorDataset
+from TrainSense import GradientAnalyzer, print_section
+
+# --- Setup: Model, Device, Criterion, Optimizer, Loader ---
+# (Define model, device, criterion, optimizer, dummy_loader as above)
+# ---
+model = nn.Sequential(nn.Linear(64, 10)).to(device)
+criterion = nn.CrossEntropyLoss().to(device)
+optimizer = Adam(model.parameters(), lr=0.001)
+dummy_X = torch.randn(32, 64); dummy_y = torch.randint(0, 10, (32,), dtype=torch.long)
+dummy_loader = DataLoader(TensorDataset(dummy_X, dummy_y), batch_size=32)
+# ---
+
+grad_analyzer = GradientAnalyzer(model)
+print_section("Gradient Analysis")
+try:
+    # --- CRITICAL: Run backward pass first! ---
+    model.train()
+    optimizer.zero_grad()
+    inputs, targets = next(iter(dummy_loader))
+    outputs = model(inputs.to(device))
+    loss = criterion(outputs, targets.to(device))
+    loss.backward()
+    print(f"Ran backward pass (Loss: {loss.item():.4f}).")
+    # -------------------------------------------
+
+    grad_summary = grad_analyzer.summary()
+    print("\n--- Gradient Summary ---")
+    if "error" in grad_summary: print(f"Error: {grad_summary['error']}")
+    else:
+        print(f"- Global Grad Norm (L2): {grad_summary.get('global_grad_norm_L2', 'N/A'):.3e}")
+        print(f"- Avg/Max Grad Norm: {grad_summary.get('avg_grad_norm', 'N/A'):.3e} / {grad_summary.get('max_grad_norm', 'N/A'):.3e}")
+        print(f"- Layer w/ Max Norm: {grad_summary.get('layer_with_max_grad_norm', 'N/A')}")
+        print(f"- NaN/Inf Grads: {grad_summary.get('num_params_nan_grad', 0)} / {grad_summary.get('num_params_inf_grad', 0)}")
+except Exception as e: print(f"Gradient analysis failed: {e}")
+finally: model.eval()
+```
+
+### 7. Monitoring GPU Status
+
+```python
+from TrainSense import GPUMonitor, print_section
 try:
     gpu_monitor = GPUMonitor()
     print_section("GPU Status")
-
     if gpu_monitor.is_available():
         status_list = gpu_monitor.get_gpu_status()
         if status_list:
-            for gpu_status in status_list:
-                 print(f"GPU ID: {gpu_status.get('id', 'N/A')}")
-                 print(f"  Name: {gpu_status.get('name', 'N/A')}")
-                 print(f"  Load: {gpu_status.get('load', 0):.1f}%")
-                 print(f"  Memory Util: {gpu_status.get('memory_utilization_percent', 0):.1f}% ({gpu_status.get('memory_used_mb', 0):.0f}/{gpu_status.get('memory_total_mb', 0):.0f} MB)")
-                 print(f"  Temperature: {gpu_status.get('temperature_celsius', 'N/A')} C")
-                 print("-" * 10)
-            # Get a summary across all GPUs
-            summary = gpu_monitor.get_status_summary()
-            if summary and summary['count'] > 1:
-                 print("\nOverall GPU Summary:")
-                 print(f"- Average Load: {summary.get('avg_load_percent', 0):.1f}%")
-                 print(f"- Average Memory Util: {summary.get('avg_memory_utilization_percent', 0):.1f}%")
-                 print(f"- Max Temperature: {summary.get('max_temperature_celsius', 'N/A')} C")
-        else:
-             print("- GPUtil is available, but no GPUs were detected or status could not be retrieved.")
-    else:
-         print("- GPUtil library not installed or failed to initialize.")
+            for gpu in status_list: # Process each GPU
+                print(f"GPU {gpu.get('id')}: {gpu.get('name')} | Load: {gpu.get('load', 0):.1f}% | Mem: {gpu.get('memory_used_mb', 0):.0f}/{gpu.get('memory_total_mb', 0):.0f}MB ({gpu.get('memory_utilization_percent', 0):.1f}%) | Temp: {gpu.get('temperature_celsius', 'N/A')}C")
+        else: print("- No GPUs detected by GPUtil.")
+    else: print("- GPUtil library unavailable.")
+except Exception as e: print(f"GPU monitoring error: {e}")
+```
+
+### 8. Getting Optimizer and Scheduler Suggestions
+
+```python
+import torch.nn as nn
+from TrainSense import OptimizerHelper, ArchitectureAnalyzer, print_section
+
+model = nn.LSTM(10, 20, 2) # Example RNN
+arch_analyzer = ArchitectureAnalyzer(model); arch_info = arch_analyzer.analyze()
+print_section("Optimizer/Scheduler Suggestions")
+suggested_opt = OptimizerHelper.suggest_optimizer(arch_info['total_parameters'], arch_info['layer_count'], arch_info['primary_architecture_type'])
+print(f"- Optimizer: {suggested_optimizer}")
+base_opt_name = suggested_opt.split(" ")[0]
+print(f"- Scheduler for {base_opt_name}: {OptimizerHelper.suggest_learning_rate_scheduler(base_opt_name)}")
+print(f"- Initial LR Suggestion: {OptimizerHelper.suggest_initial_learning_rate(arch_info['primary_architecture_type'], arch_info['total_parameters']):.1e}")
+```
+
+### 9. Generating Heuristic Hyperparameters (`UltraOptimizer`)
+
+```python
+from TrainSense import UltraOptimizer, SystemConfig, ArchitectureAnalyzer, print_section
+import torch.nn as nn
+
+model = nn.Linear(512, 10) # Simple MLP
+sys_config = SystemConfig(); config_summary = sys_config.get_summary()
+arch_analyzer = ArchitectureAnalyzer(model); arch_info = arch_analyzer.analyze()
+data_stats = {"data_size": 150000} # Example data size
+
+ultra_optimizer = UltraOptimizer(data_stats, arch_info, config_summary)
+print_section("Heuristic Parameter Set (UltraOptimizer)")
+result = ultra_optimizer.compute_heuristic_hyperparams()
+print("Generated Params:", result.get("hyperparameters", {}))
+# print("Reasoning:", result.get("reasoning", {})) # Optional: print reasons
+```
+
+### 10. Using the Comprehensive Reporter (`DeepAnalyzer`)
+
+```python
+# (Assume all necessary components like sys_config, arch_analyzer, model_profiler,
+# training_analyzer, sys_diag, grad_analyzer, dummy_loader, criterion, optimizer
+# are initialized as shown in the Quick Start example)
+# Also assume a backward pass was run if gradient_analysis=True
+
+from TrainSense import DeepAnalyzer, print_section
+
+print_section("Comprehensive Report Generation")
+deep_analyzer = DeepAnalyzer(training_analyzer, arch_analyzer, model_profiler, sys_diag, grad_analyzer)
+
+try:
+    report = deep_analyzer.comprehensive_report(
+        profile_inference=True,
+        profile_training=True,
+        gradient_analysis=GRADIENTS_AVAILABLE, # Use flag from backward pass attempt
+        inference_input_shape=input_shape,     # Defined earlier
+        training_data_loader=dummy_loader,     # Defined earlier
+        criterion=criterion,                   # Defined earlier
+        optimizer=optimizer                    # Defined earlier
+    )
+    print("\n--- Overall Recommendations from DeepAnalyzer ---")
+    for rec in report.get("overall_recommendations", []): print(f"- {rec}")
+    # Access specific report sections: report['system_diagnostics'], report['training_step_profiling'], etc.
 
 except Exception as e:
-    print(f"An error occurred while monitoring GPUs: {e}")
+    print(f"Failed to generate comprehensive report: {e}")
 
 ```
 
-### 6. Getting Optimizer and Scheduler Suggestions
-
-Leverage heuristics based on model size and type.
+### 11. Plotting Training Breakdown (Optional, New in v0.3.0!)
 
 ```python
-import torch.nn as nn
-from TrainSense.optimizer import OptimizerHelper
-from TrainSense.arch_analyzer import ArchitectureAnalyzer # Needed for context
-from TrainSense.utils import print_section
+from TrainSense import plot_training_step_breakdown
+import os
+# (Assume 'report' dictionary from DeepAnalyzer contains 'training_step_profiling' results)
 
-# --- Get Model Context ---
-model = nn.LSTM(input_size=10, hidden_size=20, num_layers=2, batch_first=True) # Example RNN
-arch_analyzer = ArchitectureAnalyzer(model)
-arch_info = arch_analyzer.analyze()
-model_params = arch_info.get('total_parameters', 0)
-model_arch_type = arch_info.get('primary_architecture_type', 'Unknown')
-# -------------------------
-
-print_section("Optimizer/Scheduler Suggestions")
-print(f"Model Type: {model_arch_type}, Params: {model_params:,}")
-
-suggested_optimizer = OptimizerHelper.suggest_optimizer(model_params, architecture_type=model_arch_type)
-print(f"\nSuggested Optimizer: {suggested_optimizer}")
-
-# Get the base name (e.g., "AdamW") for scheduler suggestion
-base_optimizer_name = suggested_optimizer.split(" ")[0]
-suggested_scheduler = OptimizerHelper.suggest_learning_rate_scheduler(base_optimizer_name)
-print(f"Suggested Scheduler type for {base_optimizer_name}: {suggested_scheduler}")
-
-suggested_initial_lr = OptimizerHelper.suggest_initial_learning_rate(model_arch_type, model_params)
-print(f"Suggested Initial Learning Rate: {suggested_initial_lr:.1e}") # Format in scientific notation
+print_section("Generate Training Step Plot")
+if report and "training_step_profiling" in report and "error" not in report["training_step_profiling"]:
+    print("Attempting plot (requires matplotlib: `pip install trainsense[plotting]`)")
+    if not os.path.exists("logs"): os.makedirs("logs")
+    try:
+        success = plot_training_step_breakdown(
+            report["training_step_profiling"],
+            save_path="logs/training_breakdown.png",
+            show_plot=False # Don't block execution in scripts
+        )
+        if success: print("Plot saved to logs/training_breakdown.png")
+        else: print("Plot generation failed (matplotlib installed?)")
+    except Exception as e: print(f"Plotting error: {e}")
+else: print("Skipping plot: Training profile data unavailable.")
 ```
 
-### 7. Generating Heuristic Hyperparameters (`UltraOptimizer`)
-
-Get a full starting set of parameters based on system, model, and basic data info.
-
-```python
-from TrainSense.ultra_optimizer import UltraOptimizer
-from TrainSense.system_config import SystemConfig
-from TrainSense.arch_analyzer import ArchitectureAnalyzer
-from TrainSense.utils import print_section
-import torch.nn as nn
-
-# --- Get Context ---
-model = nn.Sequential(nn.Linear(512, 1024), nn.ReLU(), nn.Linear(1024, 10)) # Moderate MLP
-sys_config = SystemConfig()
-config_summary = sys_config.get_summary() # UltraOptimizer uses the summary dict
-arch_analyzer = ArchitectureAnalyzer(model)
-arch_info = arch_analyzer.analyze()
-# Provide some basic stats about your training data
-data_stats = {"data_size": 150000, "num_classes": 10}
-# ------------------
-
-ultra_optimizer = UltraOptimizer(
-    training_data_stats=data_stats,
-    model_arch_stats=arch_info,
-    system_config_summary=config_summary
-)
-
-print_section("Heuristic Parameter Set (UltraOptimizer)")
-heuristic_result = ultra_optimizer.compute_heuristic_hyperparams()
-params = heuristic_result.get("hyperparameters", {})
-reasoning = heuristic_result.get("reasoning", {})
-
-print("Generated Hyperparameters:")
-for key, value in params.items():
-    print(f"- {key}: {value}")
-
-print("\nReasoning:")
-for key, reason in reasoning.items():
-    print(f"- {key}: {reason}")
-```
-
-### 8. Using the Logger
-
-Configure logging to file and/or console.
+### 12. Using the Logger
 
 ```python
 import logging
-import os
-from TrainSense.logger import TrainLogger, get_trainsense_logger
+# from TrainSense.logger import TrainLogger # Or use standard logging
 
-# --- Configure Logging ONCE (e.g., at the start of your script) ---
-log_dir = "my_training_logs"
-# if not os.path.exists(log_dir): # Logger creates dir now
-#     os.makedirs(log_dir)
+# Configure standard logging (run early in your script)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+logger = logging.getLogger("MyScript") # Use any name
 
-# Initialize the singleton logger instance with configuration
-# This setup affects all subsequent calls to get_trainsense_logger()
-logger_instance = TrainLogger(
-    log_file=os.path.join(log_dir, "trainsense_run.log"),
-    level=logging.DEBUG, # Log DEBUG and higher messages
-    log_to_console=True,
-    console_level=logging.INFO # Show INFO and higher on console
-)
-# ----------------------------------------------------------------
-
-# --- Get the configured logger anywhere else in your code ---
-logger = get_trainsense_logger()
-# -----------------------------------------------------------
-
-# --- Example Logging Calls ---
-logger.debug("This is a detailed debug message.")
-logger.info("Starting data preprocessing.")
-logger.warning("Learning rate seems high, consider lowering.")
-try:
-    x = 1 / 0
-except ZeroDivisionError:
-    logger.error("Calculation failed due to division by zero.", exc_info=True) # Log exception info
-
-logger.info("Example finished.")
+# Log messages
+logger.info("Starting analysis...")
+logger.warning("Potential issue detected.")
+try: 1/0
+except ZeroDivisionError: logger.error("Something went wrong!", exc_info=True)
 ```
 
 ## Interpreting the Output
 
-*   **High CPU Usage / Low GPU Utilization:** Check your data loading pipeline (`DataLoader` `num_workers`, transforms), preprocessing steps, or operations that might be running heavily on the CPU, preventing the GPU from being fed quickly enough.
-*   **High GPU Memory Usage (`max_memory_allocated`):** Your model or batch size might be too large for the GPU VRAM. Consider reducing batch size, using gradient accumulation, mixed-precision training (`torch.cuda.amp`), or model optimization techniques (pruning, quantization).
-*   **Profiler Bottlenecks:** Look at the `profiler_top_ops_summary`. If specific operations (besides expected convolutions/linear layers) take a disproportionate amount of time, investigate if they can be optimized or replaced.
-*   **Hyperparameter Warnings:** Pay attention to recommendations from `TrainingAnalyzer` regarding batch size, learning rate, and epochs. They are heuristics but often point towards potential issues like instability (high LR), slow convergence (low LR), or overfitting/underfitting (epochs).
-*   **Architecture Complexity:** Use the `complexity_category` and parameter count from `ArchitectureAnalyzer` to gauge resource requirements. "Very Complex / Large" models will demand significant GPU memory and time.
+*   **Training Step Profiling:**
+    *   **High `% Data Fetch/Prep`:** Your bottleneck is likely I/O or data preprocessing. Increase `num_workers` in `DataLoader`, optimize transforms, check disk speed, pre-fetch data.
+    *   **High `% Backward Pass`:** Expected for complex models, but very high values might indicate inefficient layers or large activation memory. Consider activation checkpointing for very large models.
+    *   **High `% Optimizer Step`:** Can happen with complex optimizers (like AdamW with many parameters) or if using techniques like gradient clipping extensively. Usually less of a bottleneck than backward or data loading.
+*   **Gradient Analysis:**
+    *   **High `Global Grad Norm` / `Max Grad Norm`:** Potential for exploding gradients. Consider gradient clipping (`torch.nn.utils.clip_grad_norm_`).
+    *   **Very Low `Global Grad Norm` / `Avg Grad Norm` (approaching zero):** Potential for vanishing gradients, especially in deep networks or RNNs. Check initialization, consider different activation functions (ReLU variants), use normalization layers (BatchNorm, LayerNorm), or architectures like ResNets/LSTMs/GRUs.
+    *   **`NaN/Inf Grads Found > 0`:** Serious problem! Training will likely diverge. Common causes: learning rate too high, numerical instability (e.g., log(0), division by zero), issues with mixed precision (`amp`), bad data. Reduce learning rate significantly, check data pipelines, enable anomaly detection (`torch.autograd.set_detect_anomaly(True)` - **slows training!**).
+*   **Other Common Patterns:**
+    *   **High CPU Usage / Low GPU Utilization (General):** Often points to data loading issues (see training profiler), but could also be excessive Python logic between GPU calls.
+    *   **High GPU Memory Usage (`max_memory_allocated`):** Your model or batch size might be too large for the GPU VRAM. Consider reducing batch size, using gradient accumulation, mixed-precision training (`torch.cuda.amp`), or model optimization techniques (pruning, quantization).
+    *   **Inference Profiler Bottlenecks:** Look at the `profiler_top_ops_summary`. If specific operations take disproportionate time, investigate optimization.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to open an issue or submit a pull request. (Add more details here if you have specific contribution guidelines).
+Contributions are welcome! Please feel free to open an issue to discuss potential features or bug fixes, or submit a pull request. (Consider adding more specific guidelines later, e.g., code style, testing requirements).
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License. See the LICENSE file (if available in the repository) for details.
