@@ -7,8 +7,6 @@ TrainSense is a Python toolkit designed to provide deep insights into your PyTor
 
 Whether you're debugging slow training, trying to maximize GPU utilization, investigating vanishing/exploding gradients, or simply want a clearer picture of your setup, TrainSense offers a suite of tools to assist you.
 
-**(GitHub Repo link coming very soon!)**
-
 ---
 
 ## Table of Contents
